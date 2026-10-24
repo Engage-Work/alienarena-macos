@@ -13,6 +13,7 @@ Upstream ships Windows and Linux builds. Its Unix client draws through X11, whic
 - `snd_openal.c`: Apple's OpenAL doesn't report `ALC_MONO_SOURCES`, so the engine generates as many sources as `s_maxsources` asks for and doesn't read an uninitialised count.
 - `r_main.c`: Apple's OpenGL crashes copying the screen into a texture that generates its own mipmaps. The mirror texture now makes its mipmaps after the copy.
 - `acebot_spawn.c`: an overlapping `strcpy` when adding an unnamed bot, which macOS stops at runtime.
+- `r_shadowmaps.c`: the shadow-map samplers always get their own texture units. With shadows off they were left on unit 0 beside a `sampler2D`, which Apple's OpenGL draws as black (the highlighted main-menu buttons).
 - `macos/` holds a hand-written `config.h`, Mesa's `GL/gl.h`, a build script that compiles the same sources as `source/Makefile.am`, and the packaging script.
 
 ## Building
@@ -21,7 +22,7 @@ Upstream ships Windows and Linux builds. Its Unix client draws through X11, whic
 ./build-release.sh /path/to/work
 ```
 
-This clones upstream, applies the patch, builds static SDL2 2.32.10, FreeType 2.13.3, libjpeg-turbo 3.1.2, libogg 1.3.6 and libvorbis 1.3.7 for each architecture (`build-deps.sh`, checksums pinned), compiles the game, and writes `alienarena-7.72.3-macos-<arch>.tar.gz` to `work/dist`. curl, zlib, OpenGL and OpenAL come from macOS.
+This clones upstream, applies the patch, builds static SDL2 2.32.10, FreeType 2.13.3, libjpeg-turbo 3.1.2, libogg 1.3.6 and libvorbis 1.3.7 for each architecture (`build-deps.sh`, checksums pinned), compiles the game, and writes `alienarena-<revision>-macos-<arch>.tar.gz` to `work/dist`. Each release's revision (7.72.3.1, …) is upstream 7.72.3 plus this repository's patch at that release. curl, zlib, OpenGL and OpenAL come from macOS.
 
 ## Licences
 

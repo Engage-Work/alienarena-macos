@@ -1,19 +1,20 @@
 diff --git a/macos/README-macOS.txt b/macos/README-macOS.txt
 new file mode 100644
-index 0000000..daba7df
+index 0000000..072bebc
 --- /dev/null
 +++ b/macos/README-macOS.txt
-@@ -0,0 +1,23 @@
-+Alien Arena 7.72.3 for macOS
-+============================
+@@ -0,0 +1,24 @@
++Alien Arena 7.72.3.1 for macOS
++==============================
 +
 +This is the complete Alien Arena game by COR Entertainment, LLC, built for
 +macOS (Apple silicon and Intel, macOS 11 or later) from the official source:
 +https://github.com/alienarena/alienarena, tag 7.72.3.
++7.72.3.1 is this build's revision: upstream 7.72.3 plus the macOS changes.
 +
 +Upstream's Unix client draws through X11, which macOS doesn't have, so this
 +build adds an SDL2 window and input layer (source/unix/gl_sdl.c) in its
-+place, plus two small fixes for Apple's OpenGL and OpenAL. The changes, the
++place, plus small fixes for Apple's OpenGL and OpenAL. The changes, the
 +build scripts and the exact dependency versions are published with this
 +release:
 +
@@ -2301,7 +2302,7 @@ index 0000000..509c83e
 +#define dEpsilon DBL_EPSILON
 diff --git a/macos/package.sh b/macos/package.sh
 new file mode 100755
-index 0000000..e7d1301
+index 0000000..576a5d4
 --- /dev/null
 +++ b/macos/package.sh
 @@ -0,0 +1,26 @@
@@ -2314,7 +2315,7 @@ index 0000000..e7d1301
 +set -euo pipefail
 +ARCH="$1"; BIN="$2"; OUT="$3"
 +HERE="$(cd "$(dirname "$0")" && pwd)"; TOP="$HERE/.."
-+V=7.72.3; NAME="alienarena-$V"; D="$OUT/$ARCH/$NAME"; FILE="$OUT/$NAME-macos-$ARCH.tar.gz"
++V=7.72.3.1; NAME="alienarena-$V"; D="$OUT/$ARCH/$NAME"; FILE="$OUT/$NAME-macos-$ARCH.tar.gz"
 +rm -rf "$D"; mkdir -p "$D/docs"
 +cp "$BIN" "$D/alienarena"
 +codesign --force --sign - "$D/alienarena"
@@ -2450,6 +2451,40 @@ index bb7e6b5..d2475e9 100755
  			r_newrefdef.last_mirrorupdate_time = ms;
  		}
  	}
+diff --git a/source/ref_gl/r_shadowmaps.c b/source/ref_gl/r_shadowmaps.c
+index ce0e355..6212e40 100644
+--- a/source/ref_gl/r_shadowmaps.c
++++ b/source/ref_gl/r_shadowmaps.c
+@@ -1239,6 +1239,9 @@ void R_GenerateEntityShadow (entity_t *ent, const vec3_t statLightPosition)
+ 
+ void R_SetShadowmapUniforms (shadowmap_uniform_location_t *uniforms, int tmu, qboolean enable)
+ {
++	// The shadow samplers get their own units even when shadows are off: left
++	// on unit 0 they share it with a sampler2D, which is invalid, and Apple's
++	// OpenGL then draws black.
+ 	if (uniforms->sunStatic.texture != ~0u)
+ 	{
+ 		glUniform1iARB (uniforms->sunStatic.enabled, r_sunShadowsOn && enable);
+@@ -1247,8 +1250,8 @@ void R_SetShadowmapUniforms (shadowmap_uniform_location_t *uniforms, int tmu, qb
+ 			float offs = 1.0 / r_depthtextures[deptex_sunstatic]->upload_width;
+ 			glUniform1fARB (uniforms->sunStatic.pixelOffset, offs);
+ 			GL_MBind (tmu, r_depthtextures[deptex_sunstatic]->texnum);
+-			glUniform1iARB (uniforms->sunStatic.texture, tmu++);
+ 		}
++		glUniform1iARB (uniforms->sunStatic.texture, tmu++);
+ 	}
+ 	
+ 	if (uniforms->otherStatic.texture != ~0u)
+@@ -1259,8 +1262,8 @@ void R_SetShadowmapUniforms (shadowmap_uniform_location_t *uniforms, int tmu, qb
+ 			float offs = 1.0 / r_depthtextures[deptex_otherstatic]->upload_width;
+ 			glUniform1fARB (uniforms->otherStatic.pixelOffset, offs);
+ 			GL_MBind (tmu, r_depthtextures[deptex_otherstatic]->texnum);
+-			glUniform1iARB (uniforms->otherStatic.texture, tmu++);
+ 		}
++		glUniform1iARB (uniforms->otherStatic.texture, tmu++);
+ 	}
+ 	
+ 	if (uniforms->dynamic.texture != ~0u)
 diff --git a/source/unix/gl_sdl.c b/source/unix/gl_sdl.c
 new file mode 100644
 index 0000000..c79bd64
